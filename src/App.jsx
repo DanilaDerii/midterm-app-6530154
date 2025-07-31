@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Container,
   Grid,
@@ -11,12 +11,8 @@ import {
 } from "@mui/material";
 import QuotationTable from "./QuotationTable";
 
-const products = [
-  { code: "p001", name: "Product A", price: 100 },
-  { code: "p002", name: "Product B", price: 200 },
-  { code: "p003", name: "Product C", price: 150 },
-  { code: "p004", name: "Product D", price: 250 },
-];
+// ✅ Direct JSON import (Vite bundles this automatically)
+import productsData from "./products.json";
 
 function App() {
   const itemRef = useRef();
@@ -24,12 +20,23 @@ function App() {
   const qtyRef = useRef();
   const discountRef = useRef();
 
+  const [products, setProducts] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
+  const [ppu, setPpu] = useState(0);
   const [dataItems, setDataItems] = useState([]);
-  const [ppu, setPpu] = useState(products[0].price);
-  const [selectedItem, setSelectedItem] = useState(products[0].code);
+
+  // ✅ Load products from JSON on mount
+  useEffect(() => {
+    setProducts(productsData);
+    if (productsData.length > 0) {
+      setSelectedItem(productsData[0].code);
+      setPpu(productsData[0].price);
+    }
+  }, []);
 
   const addItem = () => {
     const product = products.find((v) => selectedItem === v.code);
+    if (!product) return;
 
     const newItem = {
       item: product.name,
@@ -38,14 +45,13 @@ function App() {
       discount: Number(discountRef.current.value) || 0,
     };
 
-    // Merge duplicate items if same product name and price
+    // ✅ Merge duplicate items if same name & price
     setDataItems((prev) => {
       const existingIndex = prev.findIndex(
         (it) => it.item === newItem.item && Number(it.ppu) === Number(newItem.ppu)
       );
 
       if (existingIndex >= 0) {
-        // merge qty & discount
         const updated = [...prev];
         updated[existingIndex].qty += newItem.qty;
         updated[existingIndex].discount += newItem.discount;
@@ -68,13 +74,15 @@ function App() {
     const selectedCode = event.target.value;
     setSelectedItem(selectedCode);
     const product = products.find((v) => v.code === selectedCode);
-    setPpu(product.price);
+    if (product) {
+      setPpu(product.price);
+    }
   };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 3 }}>
       <Grid container spacing={2}>
-        {/* Left side form */}
+        {/* ✅ LEFT FORM PANEL */}
         <Grid item xs={12} md={4} sx={{ backgroundColor: "#f5f5f5", p: 2 }}>
           <Box sx={{ mb: 2 }}>
             <InputLabel>Item</InputLabel>
@@ -128,7 +136,7 @@ function App() {
           </Button>
         </Grid>
 
-        {/* Right side table */}
+        {/* ✅ RIGHT TABLE PANEL */}
         <Grid item xs={12} md={8}>
           <QuotationTable
             data={dataItems}
